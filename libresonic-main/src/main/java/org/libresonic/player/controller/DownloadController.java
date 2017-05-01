@@ -318,39 +318,42 @@ public class DownloadController implements LastModified {
      * @throws IOException If an I/O error occurs.
      */
     private void zip(ZipOutputStream out, File root, File file, TransferStatus status, HttpRange range) throws IOException {
-
-        // Exclude all hidden files starting with a "."
-        if (file.getName().startsWith(".")) {
-            return;
-        }
-
-        String zipName = file.getCanonicalPath().substring(root.getCanonicalPath().length() + 1);
-
-        if (file.isFile()) {
-            status.setFile(file);
-
-            ZipEntry zipEntry = new ZipEntry(zipName);
-            zipEntry.setSize(file.length());
-            zipEntry.setCompressedSize(file.length());
-            zipEntry.setCrc(computeCrc(file));
-
-            out.putNextEntry(zipEntry);
-            copyFileToStream(file, out, status, range);
-            out.closeEntry();
-
-        } else {
-            ZipEntry zipEntry = new ZipEntry(zipName + '/');
-            zipEntry.setSize(0);
-            zipEntry.setCompressedSize(0);
-            zipEntry.setCrc(0);
-
-            out.putNextEntry(zipEntry);
-            out.closeEntry();
-
-            File[] children = FileUtil.listFiles(file);
-            for (File child : children) {
-                zip(out, root, child, status, range);
+        try {
+            // Exclude all hidden files starting with a "."
+            if (file.getName().startsWith(".")) {
+                return;
             }
+
+            String zipName = file.getCanonicalPath().substring(root.getCanonicalPath().length() + 1);
+
+            if (file.isFile()) {
+                status.setFile(file);
+
+                ZipEntry zipEntry = new ZipEntry(zipName);
+                zipEntry.setSize(file.length());
+                zipEntry.setCompressedSize(file.length());
+                zipEntry.setCrc(computeCrc(file));
+
+                out.putNextEntry(zipEntry);
+                copyFileToStream(file, out, status, range);
+                out.closeEntry();
+
+            } else {
+                ZipEntry zipEntry = new ZipEntry(zipName + '/');
+                zipEntry.setSize(0);
+                zipEntry.setCompressedSize(0);
+                zipEntry.setCrc(0);
+
+                out.putNextEntry(zipEntry);
+                out.closeEntry();
+
+                File[] children = FileUtil.listFiles(file);
+                for (File child : children) {
+                    zip(out, root, child, status, range);
+                }
+            }
+        } catch (Exception e) {
+            LOG.warn(e.getMessage());
         }
     }
 
